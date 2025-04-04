@@ -1,61 +1,6 @@
-```mermaid
-sequenceDiagram
-    actor User
-    participant Frontend as NextjsApplication
-    participant API as ApiClient
-    participant Gateway as ApiGateway
-    participant ChatCtrl as ChatController
-    participant CmdProc as CommandProcessor
-    participant LangGraph as LangGraphService
-    participant MCPReg as MCPRegistry
-    participant MCPConn as MCPConnection
-    participant Kafka as KafkaService
-    participant MCPCli as MCPClient
-    participant ConnReg as ConnectorRegistry
-    
-    User->>Frontend: Send message
-    Frontend->>API: sendMessage(Message)
-    API->>Gateway: HTTP POST /api/chat
-    Gateway->>Gateway: validateToken(Token)
-    Gateway->>ChatCtrl: processMessage(Message)
-    
-    ChatCtrl->>CmdProc: processCommand(Command)
-    
-    alt Complex Language Task
-        CmdProc->>LangGraph: executeGraph(graphName, input)
-        LangGraph-->>CmdProc: CommandResult
-    else Machine Command
-        CmdProc->>MCPReg: getMCP(UserId)
-        MCPReg-->>CmdProc: MCPConnection
-        CmdProc->>MCPConn: sendCommand(Command)
-        
-        Note over MCPConn,Kafka: Command transmitted via Kafka
-        MCPConn->>Kafka: Producer.send(commandTopic, Command)
-        Kafka-->>MCPCli: Consumer.poll() returns Command
-        
-        MCPCli->>ConnReg: executeCommand(Command)
-        ConnReg-->>MCPCli: Result
-        
-        Note over MCPCli,Kafka: Result transmitted via Kafka
-        MCPCli->>Kafka: Producer.send(resultTopic, Result)
-        Kafka-->>MCPConn: Consumer.poll() returns Result
-        MCPConn-->>CmdProc: CommandResult
-    end
-    
-    CmdProc-->>ChatCtrl: CommandResult
-    ChatCtrl-->>Gateway: Response
-    Gateway-->>API: HTTP Response
-    API-->>Frontend: Response
-    Frontend-->>User: Display response
-    
-    par Activity Reporting
-        MCPCli->>MCPCli: ActivityManager.reportActivity()
-        MCPCli->>Kafka: Producer.send(activityTopic, Activity)
-        Note right of Kafka: ActivityProcessor consumes activities asynchronously
-    end
-```
-
 # High-Level Design (HLD)
+
+![diagram-export-4-4-2025-9_09_16-PM](https://github.com/user-attachments/assets/b7d0f40b-fdbb-4a3f-b7f4-88624232f45c)
 
 ## System Architecture Overview
 
@@ -1097,3 +1042,60 @@ The system can be deployed using Kubernetes for container orchestration:
 - **Backend Services**: Deployed as containers in Kubernetes cluster
 - **Kafka & Databases**: Managed services or self-hosted in Kubernetes
 - **Frontend**: Deployed to CDN with server-side rendering
+
+```mermaid
+sequenceDiagram
+    actor User
+    participant Frontend as NextjsApplication
+    participant API as ApiClient
+    participant Gateway as ApiGateway
+    participant ChatCtrl as ChatController
+    participant CmdProc as CommandProcessor
+    participant LangGraph as LangGraphService
+    participant MCPReg as MCPRegistry
+    participant MCPConn as MCPConnection
+    participant Kafka as KafkaService
+    participant MCPCli as MCPClient
+    participant ConnReg as ConnectorRegistry
+    
+    User->>Frontend: Send message
+    Frontend->>API: sendMessage(Message)
+    API->>Gateway: HTTP POST /api/chat
+    Gateway->>Gateway: validateToken(Token)
+    Gateway->>ChatCtrl: processMessage(Message)
+    
+    ChatCtrl->>CmdProc: processCommand(Command)
+    
+    alt Complex Language Task
+        CmdProc->>LangGraph: executeGraph(graphName, input)
+        LangGraph-->>CmdProc: CommandResult
+    else Machine Command
+        CmdProc->>MCPReg: getMCP(UserId)
+        MCPReg-->>CmdProc: MCPConnection
+        CmdProc->>MCPConn: sendCommand(Command)
+        
+        Note over MCPConn,Kafka: Command transmitted via Kafka
+        MCPConn->>Kafka: Producer.send(commandTopic, Command)
+        Kafka-->>MCPCli: Consumer.poll() returns Command
+        
+        MCPCli->>ConnReg: executeCommand(Command)
+        ConnReg-->>MCPCli: Result
+        
+        Note over MCPCli,Kafka: Result transmitted via Kafka
+        MCPCli->>Kafka: Producer.send(resultTopic, Result)
+        Kafka-->>MCPConn: Consumer.poll() returns Result
+        MCPConn-->>CmdProc: CommandResult
+    end
+    
+    CmdProc-->>ChatCtrl: CommandResult
+    ChatCtrl-->>Gateway: Response
+    Gateway-->>API: HTTP Response
+    API-->>Frontend: Response
+    Frontend-->>User: Display response
+    
+    par Activity Reporting
+        MCPCli->>MCPCli: ActivityManager.reportActivity()
+        MCPCli->>Kafka: Producer.send(activityTopic, Activity)
+        Note right of Kafka: ActivityProcessor consumes activities asynchronously
+    end
+```
