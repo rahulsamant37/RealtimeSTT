@@ -1036,7 +1036,7 @@ Multiple specialized databases for different data types:
 
 ## Deployment Architecture
 
-The system can be deployed using Kubernetes for container orchestration:
+The system can be deployed using Kubernetes for container orchestration:-
 
 - **MCP Client**: Distributed as native application for Windows/macOS/Linux
 - **Backend Services**: Deployed as containers in Kubernetes cluster
